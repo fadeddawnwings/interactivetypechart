@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Interactive Pokémon Type Chart</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#94a3b8;--accent:#06b6d4;--good:#10b981;--bad:#ef4444;--neutral:#64748b}
+    *{box-sizing:border-box}html,body{height:100%}
+    body{font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;background:linear-gradient(180deg,#071024 0%,#081022 100%);color:#e6eef8;margin:0;padding:28px}
+    .container{max-width:1100px;margin:0 auto}
+    h1{font-size:20px;margin:0 0 12px}
+    p.lead{color:var(--muted);margin:0 0 20px}
+    .grid{display:grid;grid-template-columns:1fr 340px;gap:18px}
+
+    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .types{display:flex;flex-wrap:wrap;gap:8px}
+    .type-btn{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);cursor:pointer;min-width:84px;text-align:center;font-weight:600;color:#fff}
+    .type-btn.small{min-width:64px;padding:6px 8px}
+    .type-btn.selected{outline:3px solid rgba(6,182,212,0.5);transform:scale(1.08);box-shadow:0 0 10px rgba(6,182,212,0.6);transition:all 0.15s ease}
+    .controls{display:flex;gap:8px;align-items:center;margin-top:12px}
+    .pill{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);font-weight:600;color:var(--muted);font-size:13px}
+
+    /* colored type styles */
+    .T-Normal{background:#ffffff;color:#222}
+    .T-Fire{background:#EE8130;color:#fff}
+    .T-Water{background:#6390F0;color:#fff}
+    .T-Electric{background:#F7D02C;color:#222}
+    .T-Grass{background:#7AC74C;color:#0a0}
+    .T-Ice{background:#96D9D6;color:#042}
+    .T-Fighting{background:#C22E28;color:#fff}
+    .T-Poison{background:#A33EA1;color:#fff}
+    .T-Ground{background:#E2BF65;color:#2b1a00}
+    .T-Flying{background:#A0C8FF;color:#111}
+    .T-Psychic{background:#F95587;color:#fff}
+    .T-Bug{background:#A6B91A;color:#0a0}
+    .T-Rock{background:#B6A136;color:#222}
+    .T-Ghost{background:#735797;color:#fff}
+    .T-Dragon{background:#6F35FC;color:#fff}
+    .T-Dark{background:#705746;color:#fff}
+    .T-Steel{background:#B7B7CE;color:#222}
+    .T-Fairy{background:#F4B5D5;color:#
+
+    .result-section{margin-top:10px}
+    .header-row{display:flex;justify-content:space-between;align-items:center}
+    .mult-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .mult-pill{padding:8px 10px;border-radius:8px;font-weight:700}
+    .m-4{background:#fef3c7;color:#92400e;border:1px solid rgba(0,0,0,0.12)}
+    .m-2{background:#d1fae5;color:#065f46}
+    .m-1{background:rgba(255,255,255,0.02);color:var(--muted)}
+    .m-0_5{background:#e0f2fe;color:#075985}
+    .m-0_25{background:#fee2e2;color:#7f1d1d}
+    .m-0{background:#475569;color:#fff}
+
+    .attacks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+    .attack-list{padding:8px;border-radius:8px;background:rgba(255,255,255,0.02)}
+    .attack-list h4{margin:0 0 6px;font-size:13px}
+    .attack-list ul{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px}
+    .attack-list li{padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.03);font-weight:700}
+
+    footer{margin-top:16px;color:var(--muted);font-size:13px}
+    @media (max-width:880px){.grid{grid-template-columns:1fr;}.attacks{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Interactive Pokémon Type Chart — English</h1>
+    <p class="lead">Click one or two defending types (e.g. <strong>Dark</strong> or <strong>Dark + Grass</strong>) to see which <em>attacking</em> types are 4×, 2×, 1×, ½×, ¼× or 0× effective against them.</p>
+
+    <div class="grid">
+      <div class="card">
+        <div style="display:flex;gap:12px;align-items:center;justify-content:space-between">
+          <strong>Choose defender types (max 2)</strong>
+          <div class="pill" id="selectionPill">None selected</div>
+        </div>
+
+        <div class="types" id="typesContainer" style="margin-top:12px"></div>
+
+        <div class="controls">
+          <button id="clearBtn" class="pill" onclick="clearSelection()">Clear</button>
+          <div style="flex:1"></div>
+          <div class="pill">Built-in Gen 6+ chart logic</div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+          <div class="header-row">
+            <div><strong>Effectiveness</strong></div>
+            <div style="color:var(--muted);font-size:13px">Multipliers: 4×, 2×, 1×, ½×, ¼×, 0×</div>
+          </div>
+
+          <div class="mult-row" id="multRow">
+            <div class="mult-pill m-4">4×</div>
+            <div class="mult-pill m-2">2×</div>
+            <div class="mult-pill m-1">1×</div>
+            <div class="mult-pill m-0_5">½×</div>
+            <div class="mult-pill m-0_25">¼×</div>
+            <div class="mult-pill m-0">0×</div>
+          </div>
+
+          <div class="attacks">
+            <div class="attack-list"><h4>4× (Quad)</h4><ul id="x4List"></ul></div>
+            <div class="attack-list"><h4>2× (Super)</h4><ul id="x2List"></ul></div>
+            <div class="attack-list"><h4>1× (Neutral)</h4><ul id="x1List"></ul></div>
+            <div class="attack-list"><h4>½× (Not very)</h4><ul id="x05List"></ul></div>
+            <div class="attack-list"><h4>¼× (Quarter)</h4><ul id="x025List"></ul></div>
+            <div class="attack-list"><h4>0× (No effect)</h4><ul id="x0List"></ul></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="card">
+        <strong>Selected types & summary</strong>
+        <div style="margin-top:10px" id="summary"></div>
+        <footer>
+          This is a standalone HTML file — you can save it and open in your browser. If you want CSV/export or additional UX (e.g. attack vs defense mode), tell me and I'll update it.
+        </footer>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Type list
+    const TYPES = [
+      'Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'
+    ];
+
+    // Attack -> Defender multipliers (default 1). This is a near-complete Gen6+ chart.
+    // Values: 0, 0.25, 0.5, 1, 2, 4 (4 is only for dual-type multiplication)
+    const chart = {};
+    // helper to start a row
+    function row(att){ const r = {}; TYPES.forEach(t=>r[t]=1); chart[att]=r }
+
+    // initialize
+    TYPES.forEach(row);
+
+    // Fill known interactions (attacker -> defender)
+    // Normal
+    Object.assign(chart['Normal'], {Ghost:0, Rock:0.5, Steel:0.5});
+    // Fire
+    Object.assign(chart['Fire'], {Grass:2, Ice:2, Bug:2, Steel:2, Fire:0.5, Water:0.5, Rock:0.5, Dragon:0.5});
+    // Water
+    Object.assign(chart['Water'], {Fire:2, Ground:2, Rock:2, Water:0.5, Grass:0.5, Dragon:0.5});
+    // Electric
+    Object.assign(chart['Electric'], {Water:2, Flying:2, Electric:0.5, Grass:0.5, Dragon:0.5, Ground:0});
+    // Grass
+    Object.assign(chart['Grass'], {Water:2, Ground:2, Rock:2, Fire:0.5, Grass:0.5, Poison:0.5, Flying:0.5, Bug:0.5, Dragon:0.5, Steel:0.5});
+    // Ice
+    Object.assign(chart['Ice'], {Grass:2, Ground:2, Flying:2, Dragon:2, Fire:0.5, Water:0.5, Ice:0.5, Steel:0.5});
+    // Fighting
+    Object.assign(chart['Fighting'], {Normal:2, Ice:2, Rock:2, Dark:2, Steel:2, Poison:0.5, Flying:0.5, Psychic:0.5, Bug:0.5, Fairy:0.5, Ghost:0});
+    // Poison
+    Object.assign(chart['Poison'], {Grass:2, Fairy:2, Poison:0.5, Ground:0.5, Rock:0.5, Ghost:0.5, Steel:0});
+    // Ground
+    Object.assign(chart['Ground'], {Fire:2, Electric:2, Poison:2, Rock:2, Steel:2, Grass:0.5, Bug:0.5, Flying:0});
+    // Flying
+    Object.assign(chart['Flying'], {Grass:2, Fighting:2, Bug:2, Electric:0.5, Rock:0.5, Steel:0.5});
+    // Psychic
+    Object.assign(chart['Psychic'], {Fighting:2, Poison:2, Psychic:0.5, Steel:0.5, Dark:0});
+    // Bug
+    Object.assign(chart['Bug'], {Grass:2, Psychic:2, Dark:2, Fire:0.5, Fighting:0.5, Poison:0.5, Flying:0.5, Ghost:0.5, Steel:0.5, Fairy:0.5});
+    // Rock
+    Object.assign(chart['Rock'], {Fire:2, Ice:2, Flying:2, Bug:2, Fighting:0.5, Ground:0.5, Steel:0.5});
+    // Ghost
+    Object.assign(chart['Ghost'], {Psychic:2, Ghost:2, Normal:0, Dark:0.5});
+    // Dragon
+    Object.assign(chart['Dragon'], {Dragon:2, Steel:0.5, Fairy:0});
+    // Dark
+    Object.assign(chart['Dark'], {Psychic:2, Ghost:2, Fighting:0.5, Dark:0.5, Fairy:0.5});
+    // Steel
+    Object.assign(chart['Steel'], {Ice:2, Rock:2, Fairy:2, Fire:0.5, Water:0.5, Electric:0.5, Steel:0.5});
+    // Fairy
+    Object.assign(chart['Fairy'], {Fighting:2, Dragon:2, Dark:2, Fire:0.5, Poison:0.5, Steel:0.5});
+
+    // UI boot
+    const typesContainer = document.getElementById('typesContainer');
+    const selectionPill = document.getElementById('selectionPill');
+    const summary = document.getElementById('summary');
+
+    let selected = [];
+
+    function renderTypeButtons(){
+      typesContainer.innerHTML = '';
+      TYPES.forEach(t=>{
+        const btn = document.createElement('button');
+        btn.className = `type-btn T-${t}`;
+        btn.textContent = t;
+        btn.onclick = ()=>toggleType(t, btn);
+        typesContainer.appendChild(btn);
+      });
+    }
+
+    function toggleType(t, btn){
+      // select/deselect
+      const idx = selected.indexOf(t);
+      if(idx>=0){ selected.splice(idx,1); btn.classList.remove('selected'); }
+      else{
+        if(selected.length<2){ selected.push(t); btn.classList.add('selected'); }
+        else{
+          // replace first selected
+          const first = selected.shift();
+          // find its button and unselect
+          [...document.querySelectorAll('.type-btn')].find(x=>x.textContent===first).classList.remove('selected');
+          selected.push(t); btn.classList.add('selected');
+        }
+      }
+      updateSelectionUI();
+      computeAndShow();
+    }
+
+    function clearSelection(){
+      selected = [];
+      document.querySelectorAll('.type-btn').forEach(b=>b.classList.remove('selected'));
+      updateSelectionUI();
+      computeAndShow();
+    }
+
+    function updateSelectionUI(){
+      if(selected.length===0) selectionPill.textContent = 'None selected';
+      else selectionPill.textContent = selected.join(' + ');
+
+      // summary
+      if(selected.length===0){ summary.innerHTML = '<div style="color:var(--muted)">No defending type selected. Click types on the left.</div>' }
+      else if(selected.length===1){
+        summary.innerHTML = `<div>Defending type: <strong>${selected[0]}</strong></div>`
+      } else {
+        summary.innerHTML = `<div>Defending types: <strong>${selected[0]} + ${selected[1]}</strong></div>`
+      }
+    }
+
+    function computeAndShow(){
+      // reset lists
+      const lists = {x4:[], x2:[], x1:[], x05:[], x025:[], x0:[]};
+
+      if(selected.length===0){ // show nothing
+        ['x4List','x2List','x1List','x05List','x025List','x0List'].forEach(id=>document.getElementById(id).innerHTML='');
+        return;
+      }
+
+      TYPES.forEach(att=>{
+        let m = chart[att][selected[0]] ?? 1;
+        if(selected.length===2){ m = m * (chart[att][selected[1]] ?? 1); }
+        // normalize floating rounding issues
+        m = Math.round(m*100)/100;
+        if(m===4) lists.x4.push(att);
+        else if(m===2) lists.x2.push(att);
+        else if(m===1) lists.x1.push(att);
+        else if(m===0.5) lists.x05.push(att);
+        else if(m===0.25) lists.x025.push(att);
+        else if(m===0) lists.x0.push(att);
+        else {
+          // handle unexpected multipliers (like 0.0 etc)
+          if(m>2.9) lists.x4.push(att);
+          else if(m>1.4) lists.x2.push(att);
+          else if(m>0.9 && m<1.1) lists.x1.push(att);
+          else if(m>0.4) lists.x05.push(att);
+          else if(m>0.09) lists.x025.push(att);
+          else lists.x0.push(att);
+        }
+      });
+
+      document.getElementById('x4List').innerHTML = lists.x4.map(t=>`<li class="T-${t} small">${t}</li>`).join('') || '<li style="opacity:0.6">—</li>';
+      document.getElementById('x2List').innerHTML = lists.x2.map(t=>`<li class="T-${t} small">${t}</li>`).join('') || '<li style="opacity:0.6">—</li>';
+      document.getElementById('x1List').innerHTML = lists.x1.map(t=>`<li class="T-${t} small">${t}</li>`).join('') || '<li style="opacity:0.6">—</li>';
+      document.getElementById('x05List').innerHTML = lists.x05.map(t=>`<li class="T-${t} small">${t}</li>`).join('') || '<li style="opacity:0.6">—</li>';
+      document.getElementById('x025List').innerHTML = lists.x025.map(t=>`<li class="T-${t} small">${t}</li>`).join('') || '<li style="opacity:0.6">—</li>';
+      document.getElementById('x0List').innerHTML = lists.x0.map(t=>`<li class="T-${t} small">${t}</li>`).join('') || '<li style="opacity:0.6">—</li>';
+
+    }
+
+    // initial render
+    renderTypeButtons(); updateSelectionUI(); computeAndShow();
+  </script>
+</body>
+</html>
